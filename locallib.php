@@ -93,11 +93,15 @@ class report_linkvalidator {
     private $count_total = 0;
 
     private $count_errors = 0;
+    
+    private $modules = array(
+        'book'
+    );
 
     function __construct($course, $params) {
         $this->course = $course;
         $this->modinfo = get_fast_modinfo($course);
-        $this->sections = get_all_sections($course->id);
+        $this->sections = get_fast_modinfo($course->id)->get_section_info_all();
         $this->context = context_course::instance($course->id);
         $this->filter = $params['filter'];
         $this->config = get_config('report_linkvalidator');
@@ -299,13 +303,23 @@ class report_linkvalidator {
                 $sectionrow = new html_table_row();
                 $sectionrow->attributes['class'] = 'section';
                 $sectioncell = new html_table_cell();
-                $sectioncell->colspan = count($table->head);
+                //$sectioncell->colspan = count($table->head);
                 $sectioncell->text = $OUTPUT->heading($cm->sectiontitle, 3);
                 $sectionrow->cells[] = $sectioncell;
+                
+                $urlcell = new html_table_cell();
+                $resultcell = new html_table_cell();
+                foreach ($cm->sectionresult as $url => $result) {
+                    $urlcell->text = $url;
+                    $resultcell->text = $result;
+                }
+                $sectionrow->cells[] = $urlcell;
+                $sectionrow->cells[] = $resultcell;
                 $table->data[] = $sectionrow;
             } else {
                 $attributes = array(
-                        'dimmed' => ($cm->visible ? '' : 'class="dimmed"')
+                        'dimmed' => ($cm->visible ? '' : 'class="dimmed"'),
+                        'target' => '_blank'
                         );
                 $modulename = get_string('modulename', $cm->modname);
                 $activityicon = $OUTPUT->pix_icon('icon', $modulename, $cm->modname, array('class'=>'icon'));
@@ -328,8 +342,14 @@ class report_linkvalidator {
                 $resultcell->attributes['class'] = 'result';
                 $resultcell->text = '';
                 // add the urls to table
-                foreach ($cm->result as $url => $result) {
-                    $urlcell->text .= html_writer::link(($url), format_string($url)) . '</br>';
+                foreach ($cm->result as $url => $result) {                    
+                    if (stristr($url, '###')) {
+                        $url = explode('###', $url);
+                        $modlink = $this->module_content_url($cm->modname, $cm->cmid, $url);
+                        $urlcell->text .= html_writer::link(($url[0]), format_string($url[0]), array('target' => '_blank')) .' - '. $modlink . '</br>';
+                    } else {
+                        $urlcell->text .= html_writer::link(($url), format_string($url), array('target' => '_blank')) . '</br>';
+                    }                    
                     $resultcell->text .= $result . '</br>';
                 }
                 $reportrow->cells[] = $urlcell;
@@ -346,6 +366,17 @@ class report_linkvalidator {
         echo html_writer::tag('p', get_string('found_errors', 'report_linkvalidator', $this->count_errors));
     }
 
+    private function module_content_url($modulename, $instance, $url) {
+        
+        if (in_array($modulename, $this->modules)) {           
+            switch ($modulename):
+                case 'book':
+                    $link = html_writer::link(new moodle_url('/mod/book/view.php?id='.$instance.'&chapterid='.$url[1]), 'Chapter link', array('target' => '_blank')); 
+                    return $link;
+            endswitch;
+        }
+    }
+    
     // validate and test the url
     private function test_urls($content) {
         $results = array();
@@ -392,25 +423,63 @@ class report_linkvalidator {
         return $results;
     }
 
+    private function parse_module_content($modulename, $instance, $content) {
+        global $DB;
+        
+        if (in_array($modulename, $this->modules)) {
+            switch ($modulename):
+                case 'book':
+                    $chapters = $DB->get_records('book_chapters', array('bookid' => $instance));
+                    foreach ($chapters as $key => $value) {
+                        $content->$key = $value->content;
+                    }
+                    return $content;
+            endswitch;
+        }
+        return $content;
+    }
+    
     private function parse_content($coursemodule) {
         global $DB;
 
         $content = $DB->get_record($coursemodule->modname, array('id'=>$coursemodule->instance), '*', MUST_EXIST);
+    
+        $content = $this->parse_module_content($coursemodule->modname, $coursemodule->instance, $content);
 
         $fields = array();
         // from http://daringfireball.net/2010/07/improved_regex_for_matching_urls
         $pattern = '/\b((?:https?:\/\/|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))/';
-        foreach ($content as $field) {
+        //html_writer::link(new moodle_url('/mod/book/view.php?id='.$coursemodule->instance.'&chapterid='.$chapter_id[1]), 'Chapter link'); 
+        foreach ($content as $key => $field) {
             if (preg_match_all($pattern, $field, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as $match) {
-                    $fields[] = $match[0]; // only the full match is needed
+                    if (is_numeric($key)) {
+                        $fields[] = $match[0].'###'.$key; // only the full match is needed
+                    } else {
+                        $fields[] = $match[0]; // only the full match is needed
+                    }
                 }
             }
         }
-
+        
         return array_unique($fields);
     }
 
+    private function parse_section($section) {
+        
+        $fields = array();
+        // from http://daringfireball.net/2010/07/improved_regex_for_matching_urls
+        $pattern = '/\b((?:https?:\/\/|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))/';
+        
+        if (preg_match_all($pattern, $section, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $fields[] = $match[0]; // only the full match is needed
+            }
+        }
+                
+        return array_unique($fields);
+    }
+    
     /**
      * This function is used to generate and display selector form
      *
@@ -451,17 +520,30 @@ class report_linkvalidator {
         global $CFG;
 
         $table = array();
-
-        $prevsecctionnum = 0;
-        foreach ($this->modinfo->sections as $sectionnum=>$section) {
+        
+        $prevsecctionnum = 999999; //Lets include General section name
+        
+        // Modules
+        foreach ($this->modinfo->sections as $sectionnum => $section) {
             $sectiontitle = get_section_name($this->course, $this->sections[$sectionnum]);
             foreach ($section as $cmid) {
                 $cm = $this->modinfo->cms[$cmid];
-
                 // get the course section
                 if ($prevsecctionnum != $sectionnum) {
                     $sectionrow = new stdClass();
-                    $sectionrow->sectiontitle = $sectiontitle;
+                    $sectionrow->sectiontitle = $sectiontitle;   
+                    $sectiondescription = $this->sections[$sectionnum]->summary;
+                    
+                    //parse section content
+                    $sectioncontent = $this->parse_section($sectiondescription);
+                    $sectioinresults = $this->test_urls($sectioncontent);
+                    //27.05.2014 - Skip empty values
+                    if (!$sectioncontent && !$sectioinresults) {
+                        continue;
+                    }
+                    $sectiondata = array_combine($sectioncontent, $sectioinresults); 
+                    $sectionrow->sectionresult = $sectiondata;
+                    
                     $table[] = $sectionrow;
                     $prevsecctionnum = $sectionnum;
                 }
@@ -474,10 +556,14 @@ class report_linkvalidator {
                 $reportrow->visible = $cm->visible;
                 $reportrow->cmid = $cm->id;
                 $reportrow->cmname = $cm->name;
-
+                
                 // fetch url content from activity
                 $content = $this->parse_content($cm);
                 $results = $this->test_urls($content);
+                //23.05.2014 - Skip empty values
+                if (!$content && !$results) {
+                    continue;
+                }
                 $data = array_combine($content, $results);
 
                 if ($this->filter === 'errorsonly') {
