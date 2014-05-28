@@ -531,7 +531,7 @@ class report_linkvalidator {
                 // get the course section
                 if ($prevsecctionnum != $sectionnum) {
                     $sectionrow = new stdClass();
-                    $sectionrow->sectiontitle = $sectiontitle;   
+                    $sectionrow->sectiontitle = (!$sectiontitle ? get_string('section').' '.$sectionnum : $sectiontitle);   
                     $sectiondescription = $this->sections[$sectionnum]->summary;
                     
                     //parse section content
@@ -539,7 +539,8 @@ class report_linkvalidator {
                     $sectioinresults = $this->test_urls($sectioncontent);
                     //27.05.2014 - Skip empty values
                     if (!$sectioncontent && !$sectioinresults) {
-                        continue;
+                        $sectioncontent = array(0 => '');
+                        $sectioinresults = array(0 => '');
                     }
                     $sectiondata = array_combine($sectioncontent, $sectioinresults); 
                     $sectionrow->sectionresult = $sectiondata;
