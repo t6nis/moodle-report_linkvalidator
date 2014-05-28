@@ -540,7 +540,7 @@ class report_linkvalidator {
                     //27.05.2014 - Skip empty values
                     if (!$sectioncontent && !$sectioinresults) {
                         $sectioncontent = array(0 => '');
-                        $sectioinresults = array(0 => '');
+                        $sectioinresults = array(0 => ''); 
                     }
                     $sectiondata = array_combine($sectioncontent, $sectioinresults); 
                     $sectionrow->sectionresult = $sectiondata;
