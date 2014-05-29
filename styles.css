@@ -1,6 +1,6 @@
 #page-report-linkvalidator-index td.title {text-align:right;}
 #page-report-linkvalidator-index tr.url {text-align: center;}
-#page-report-linkvalidator-index tr.section {text-align: center;}
+#page-report-linkvalidator-index tr.section {text-align: left; font-size:0.9em;}
 #page-report-linkvalidator-index td.result {font-size: 0.9em;}
 
 
@@ -15,12 +15,18 @@
 }
 .path-report-linkvalidator #linkvalidator thead th:first-child {
     width: 150px;
+}
+.path-report-linkvalidator #linkvalidator tbody td.activity.cell {
     word-wrap: break-word;
 }
 .path-report-linkvalidator #linkvalidator thead th:last-child {
-    width: 120px;
-    word-wrap: break-word;
+    width: 165px;
 }
 .path-report-linkvalidator #linkvalidator tbody td.url.cell {
-    word-wrap: break-word;
+    overflow-x: scroll;
+    font-size: 0.9em;
+    border-bottom:0px;
+}
+.path-report-linkvalidator #linkvalidator tbody td.url.cell .no-break {
+    white-space: nowrap;
 }

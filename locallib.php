@@ -346,9 +346,9 @@ class report_linkvalidator {
                     if (stristr($url, '###')) {
                         $url = explode('###', $url);
                         $modlink = $this->module_content_url($cm->modname, $cm->cmid, $url);
-                        $urlcell->text .= html_writer::link(($url[0]), format_string($url[0]), array('target' => '_blank')) .' - '. $modlink . '</br>';
+                        $urlcell->text .= '<span class="no-break">'.html_writer::link(($url[0]), format_string($url[0]), array('target' => '_blank')) .' - '. $modlink . '</span></br>';
                     } else {
-                        $urlcell->text .= html_writer::link(($url), format_string($url), array('target' => '_blank')) . '</br>';
+                        $urlcell->text .= '<span class="no-break">'.html_writer::link(($url), format_string($url), array('target' => '_blank')) . '</span></br>';
                     }                    
                     $resultcell->text .= $result . '</br>';
                 }
