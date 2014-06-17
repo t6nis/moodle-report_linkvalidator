@@ -50,7 +50,9 @@ $context = context_course::instance($course->id);
 
 require_capability('report/linkvalidator:view', $context);
 
-add_to_log($course->id, "course", "report link validator", "report/linkvalidator/index.php?id=$course->id", $course->id);
+// Trigger a report viewed event.
+$event = \report_linkvalidator\event\report_viewed::create(array('context' => $context));
+$event->trigger();
 
 $strlinks = get_string('links', 'report_linkvalidator');
 $stradministration = get_string('administration');
@@ -61,7 +63,8 @@ $adminediting = optional_param('adminedit', -1, PARAM_BOOL);
 if ($PAGE->user_allowed_editing() && $adminediting != -1) {
     $USER->editing = $adminediting;
 }
-session_get_instance()->write_close();
+
+\core\session\manager::write_close();
 
 $report = new report_linkvalidator($course, $params);
 
