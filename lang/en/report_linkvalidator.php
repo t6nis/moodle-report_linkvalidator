@@ -47,3 +47,4 @@ $string['timeout_desc'] = 'Number of seconds to wait for a link check to time ou
 $string['found_total'] = 'Total number of links found: {$a}';
 $string['found_errors'] = 'Number of errors found: {$a}';
 $string['eventreportviewed'] = 'Linkvalidator report viewed';
+$string['linkvalidator:view'] = 'View Linkvalidator';
