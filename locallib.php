@@ -289,7 +289,7 @@ class report_linkvalidator {
 
         $table = new html_table();
         $table->attributes['class'] = 'generaltable boxaligncenter';
-        $table->cellpadding = 5;
+        //$table->cellpadding = 5;
         $table->id = 'linkvalidator';
         // set up table headings
         $table->head = array(
@@ -303,7 +303,7 @@ class report_linkvalidator {
                 $sectionrow = new html_table_row();
                 $sectionrow->attributes['class'] = 'section';
                 $sectioncell = new html_table_cell();
-                //$sectioncell->colspan = count($table->head);
+                $sectioncell->colspan = count($table->head);
                 $sectioncell->text = $OUTPUT->heading($cm->sectiontitle, 3);
                 $sectionrow->cells[] = $sectioncell;
                 
@@ -313,8 +313,10 @@ class report_linkvalidator {
                     $urlcell->text = $url;
                     $resultcell->text = $result;
                 }
-                $sectionrow->cells[] = $urlcell;
-                $sectionrow->cells[] = $resultcell;
+                if (!empty($urlcell->text)) {
+                    $sectionrow->cells[] = $urlcell;
+                    $sectionrow->cells[] = $resultcell;
+                }
                 $table->data[] = $sectionrow;
             } else {
                 $attributes = array(
